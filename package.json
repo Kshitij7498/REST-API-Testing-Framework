@@ -1,0 +1,14 @@
+{
+  "name": "restapi-testing-framework",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Runnable REST API testing framework using Postman Collection, Newman, JavaScript, Express, and GitHub Actions.",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node scripts/run-tests.js",
+    "test:collection": "newman run postman/RestAPI-Testing-Framework.postman_collection.json --environment postman/local.postman_environment.json --reporters cli"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^4.21.2" },
+  "devDependencies": { "newman": "^6.2.1" }
+}

@@ -1,0 +1,488 @@
+{
+  "info": {
+    "_postman_id": "f2a6a7a4-56de-4c1f-b118-4f8d7e7b7d61",
+    "name": "REST API Testing Framework",
+    "description": "Automated CRUD, authentication, validation, response-code, and JSON schema checks against the included local sample API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health check - public",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health"
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Health response schema is valid', () => { pm.expect(body).to.have.property('status', 'ok'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET items - authentication required",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/items"
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Missing auth returns 401', () => pm.response.to.have.status(401));",
+              "pm.test('Error response is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET items - invalid token",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer wrong-token",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items"
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid token returns 403', () => pm.response.to.have.status(403));",
+              "pm.test('Forbidden error shape', () => pm.expect(pm.response.json().error).to.eql('Forbidden'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET items - list and schema validation",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items"
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('List schema and data types', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.count).to.be.a('number'); pm.expect(body.count).to.eql(body.data.length); if (body.data.length) { pm.expect(body.data[0].id).to.be.a('number'); pm.expect(body.data[0].name).to.be.a('string'); pm.expect(body.data[0]).to.have.property('description'); } });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST item - reject missing name",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"description\": \"Missing required name\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Missing name returns 400', () => pm.response.to.have.status(400));",
+              "pm.test('Validation error is explained', () => pm.expect(pm.response.json().message).to.include('name'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST item - reject invalid name type",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": 123, \"description\": \"Wrong type\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid name type returns 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST item - create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Framework test item\", \"description\": \"Created by Postman collection\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Create returns 201', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('Created item schema and values', () => { pm.expect(body.data.id).to.be.a('number'); pm.expect(body.data.name).to.eql('Framework test item'); pm.expect(body.data.description).to.eql('Created by Postman collection'); pm.expect(body.message).to.eql('Item created'); });",
+              "pm.environment.set('itemId', body.data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET item - read created item",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items/{{itemId}}"
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Read returns 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Returned item matches created item', () => { pm.expect(body.data.id).to.eql(Number(pm.environment.get('itemId'))); pm.expect(body.data.name).to.eql('Framework test item'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT item - update",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items/{{itemId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Updated framework item\", \"description\": \"Updated by automated test\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Update returns 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Updated fields are persisted', () => { pm.expect(body.data.name).to.eql('Updated framework item'); pm.expect(body.data.description).to.eql('Updated by automated test'); pm.expect(body.data.id).to.eql(Number(pm.environment.get('itemId'))); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT item - reject empty name",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items/{{itemId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"   \"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Empty name returns 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET item - invalid ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items/abc"
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid ID returns 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET item - not found",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items/999999"
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Unknown item returns 404', () => pm.response.to.have.status(404));",
+              "pm.test('Not-found response shape', () => pm.expect(pm.response.json().error).to.eql('Not Found'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST item - malformed JSON",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": ",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Malformed JSON returns 400', () => pm.response.to.have.status(400));",
+              "pm.test('Malformed JSON message is clear', () => pm.expect(pm.response.json().message).to.eql('Malformed JSON body'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE item - delete created item",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items/{{itemId}}"
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Delete returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('Delete confirms item ID', () => pm.expect(pm.response.json().id).to.eql(Number(pm.environment.get('itemId'))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET item - deleted item is not found",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/items/{{itemId}}"
+      },
+      "event": [
+        {
+          "event": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Deleted item returns 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000"
+    },
+    {
+      "key": "token",
+      "value": "test-token"
+    },
+    {
+      "key": "itemId",
+      "value": ""
+    }
+  ]
+}
